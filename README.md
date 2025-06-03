@@ -16,7 +16,7 @@ CHAR Coin is a Solana-based smart contract system built using the Anchor framewo
 - Multisig-secured marketing and treasury fund control  
 - Emergency halt for contract protection
 
-All modules have passed internal audits and comprehensive unit testing. For more details, please refer to the Official White Paper ( https://charcoin.org/charcoin-white-paper/ )
+All modules have passed internal audits and comprehensive unit testing. For more details, please refer to the Official White Paper: https://charcoin.org/charcoin-white-paper/
 
 ---
 
