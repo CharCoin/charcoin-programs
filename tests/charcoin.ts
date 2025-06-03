@@ -212,8 +212,7 @@ describe("char coin test", () => {
     await program.methods
       .stakeTokensHandler(
         new anchor.BN(10e6), // 10 tokens
-        // new anchor.BN(30) // 30 days
-        new anchor.BN(1) // 1 days for devnet
+        new anchor.BN(30) // 30 days
       )
       .accounts({
         configAccount: configAccount,
@@ -234,8 +233,7 @@ describe("char coin test", () => {
     const stake_data = await program.account.userStakes.fetch(userStake)
 
     assert.equal(10e6, Number(data.totalAmount));
-    // assert.equal(30, Number(data.lockup));
-    assert.equal(1, Number(stake_data.lockup));
+    assert.equal(30, Number(stake_data.lockup));
 
   });
 

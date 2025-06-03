@@ -9,14 +9,11 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u64) -> Result<()>
     let user = &mut ctx.accounts.user;
     let user_stake = &mut ctx.accounts.user_stake;
 
-    // require!(
-    //     lockup == 30 || lockup == 90 || lockup == 180,
-    //     StakingError::WrongStakingPackage
-    // );
     require!(
-        lockup == 1 || lockup == 2 || lockup == 3,
+        lockup == 30 || lockup == 90 || lockup == 180,
         StakingError::WrongStakingPackage
     );
+  
     require!(user_stake.amount == 0, StakingError::AlreadyStaked);
     require!(!user_stake.unstaked, StakingError::AlreadyUnStaked);
     let clock = Clock::get()?;
@@ -84,8 +81,7 @@ pub fn unstake_tokens(ctx: Context<Unstake>,_index:u64) -> Result<()> {
     
     require!(user_stake.unstake_requested_at != 0, StakingError::RequestUnstakeFirst);
    
-    // require!(clock.unix_timestamp >= user.unstake_requested_at + 172800 ,StakingError::WaitFor48Hours); // 48 hours in seconds
-    require!(clock.unix_timestamp >= user_stake.unstake_requested_at + 180 ,StakingError::WaitFor48Hours); // 3 mint in seconds
+    require!(clock.unix_timestamp >= user_stake.unstake_requested_at + 172800 ,StakingError::WaitFor48Hours); // 48 hours in seconds
   
 
     // Check if user has staked tokens

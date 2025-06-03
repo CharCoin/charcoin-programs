@@ -78,14 +78,11 @@ pub fn cast_vote(ctx: Context<CastVote>, vote_weight: u64) -> Result<()> {
         user.total_amount > 0,
         CharityError::NoStakedTokens
     );
-    // require!(
-    //     clock - user.staked_at >= 15 * 86400,
-    //     CharityError::VotingNotEligible
-    // );
     require!(
-        clock - user.first_staked_at >= 240, // 4 mints
+        clock - user.first_staked_at >= 15 * 86400,
         CharityError::VotingNotEligible
     );
+    
     let charity = &mut ctx.accounts.charity;
     // Ensure voting is active.
     require!(

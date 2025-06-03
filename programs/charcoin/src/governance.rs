@@ -76,14 +76,11 @@ pub fn vote_on_proposal(
         GovernanceError::NoStakedTokens
     );
     let amount_staked = user.total_amount;
-    // require!(
-    //     current_time - user.staked_at >= 15 * 86400,
-    //     GovernanceError::VotingNotEligible
-    // );
-     require!(
-        current_time - user.first_staked_at >= 240, // 4 mints
+    require!(
+        current_time - user.first_staked_at >= 15 * 86400,
         GovernanceError::VotingNotEligible
     );
+   
     require!(
         current_time < proposal.end_time,
         GovernanceError::VotingPeriodEnded
