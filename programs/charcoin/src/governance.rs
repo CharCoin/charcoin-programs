@@ -76,11 +76,11 @@ pub fn vote_on_proposal(
         GovernanceError::NoStakedTokens
     );
     let amount_staked = user.total_amount;
-    require!(
+     require!(
         current_time - user.first_staked_at >= 15 * 86400,
         GovernanceError::VotingNotEligible
     );
-   
+    
     require!(
         current_time < proposal.end_time,
         GovernanceError::VotingPeriodEnded
@@ -376,7 +376,7 @@ pub struct VoteOnProposal<'info> {
     #[account(mut)]
     pub voter: Signer<'info>,
     #[account(
-        seeds = [b"user", staking_pool.key().as_ref(), voter.key().as_ref()],
+        seeds = [b"user",  voter.key().as_ref()],
         bump = user.bump
     )]
     pub user: Account<'info, UserStakeInfo>,
