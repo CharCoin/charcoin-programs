@@ -33,15 +33,17 @@ describe("char coin test", () => {
 
 
   // Derive monthly reward wallet PDA
-  let monthlyRewardWallet = anchor.web3.Keypair.generate()
-  // Derive annual reward wallet PDA
-  let annualRewardWallet = anchor.web3.Keypair.generate()
+  let monthlyTopTierWallet = anchor.web3.Keypair.generate()
+  let annualTopTierWallet = anchor.web3.Keypair.generate()
+  let monthlyCharityLotteryWallet = anchor.web3.Keypair.generate()
+  let annualCharityLotteryWallet = anchor.web3.Keypair.generate()
+  let monthlyOneTimeCausesWallet = anchor.web3.Keypair.generate()
+  let monthlyInfiniteImpactCausesWallet = anchor.web3.Keypair.generate()
+  let annualOneTimeCausesWallet = anchor.web3.Keypair.generate()
+  let annualInfiniteImpactCausesWallet = anchor.web3.Keypair.generate()
+ 
 
-  // Derive monthly donation wallet PDA
-  let monthlyDonationWallet = anchor.web3.Keypair.generate()
 
-  // Derive annual charity wallet PDA
-  let annualDonationWallet = anchor.web3.Keypair.generate()
   let chaiFunds = anchor.web3.Keypair.generate()
   let marketingWallet1 = anchor.web3.Keypair.generate()
   let marketingWallet2 = anchor.web3.Keypair.generate()
@@ -170,10 +172,14 @@ describe("char coin test", () => {
       marketingWallet1: marketingWallet1.publicKey,
       marketingWallet2: marketingWallet2.publicKey,
       admin: admin.publicKey,
-      monthlyRewardWallet: monthlyRewardWallet.publicKey,
-      annualRewardWallet: annualRewardWallet.publicKey,
-      monthlyDonationWallet: monthlyDonationWallet.publicKey,
-      annualDonationWallet: annualDonationWallet.publicKey,
+      monthlyTopTierWallet:monthlyTopTierWallet.publicKey,
+      annualTopTierWallet:annualTopTierWallet.publicKey,
+      monthlyCharityLotteryWallet:monthlyCharityLotteryWallet.publicKey,
+      annualCharityLotteryWallet:annualCharityLotteryWallet.publicKey,
+      monthlyOneTimeCausesWallet:monthlyOneTimeCausesWallet.publicKey,
+      monthlyInfiniteImpactCausesWallet:monthlyInfiniteImpactCausesWallet.publicKey,
+      annualOneTimeCausesWallet:annualOneTimeCausesWallet.publicKey,
+      annualInfiniteImpactCausesWallet:annualInfiniteImpactCausesWallet.publicKey,
       deathWallet: deathWallet.publicKey,
       treasuryAuthority: treasuryAuthority.publicKey,
     };
@@ -183,7 +189,7 @@ describe("char coin test", () => {
       .rpc();
 
     await program.methods
-      .stakingInitialize(new anchor.BN(0.01e6))
+      .stakingInitialize()
       .accounts({
         stakingPool: stakingPool,
         stakingRewardAccount: stakingRewardAccount,
@@ -196,6 +202,47 @@ describe("char coin test", () => {
       })
       .signers([admin])
       .rpc();
+    await program.methods
+      .setRewardPercentageHandler(
+        // reward       , lockup          ,   vote power      
+        new anchor.BN(50),new anchor.BN(1),new anchor.BN(500), //  5 , 1, 0.5 
+        new anchor.BN(70),new anchor.BN(90),new anchor.BN(1000), // 7, 90, 1
+        new anchor.BN(150),new anchor.BN(180),new anchor.BN(3000)  // 15, 180, 3
+
+      )
+      .accounts({
+        stakingPool: stakingPool,
+                configAccount: configAccount,
+                admin:admin.publicKey
+
+      })
+      .signers([admin])
+      .rpc();
+
+
+      /**
+       *  min_governance_stake:u64,
+        min_stake_duration_voting:i64,
+        early_unstake_penalty:u64
+       */
+    await program.methods
+      .updateSettings(
+        new anchor.BN(1e6),// min_governance_stake = 1 token
+        new anchor.BN(1), // min_stake_duration_voting = 1 sec
+        new anchor.BN(100) // early_unstake_penalty = 10%
+      )
+      .accounts({
+                configAccount: configAccount,
+                admin:admin.publicKey
+
+      })
+      .signers([admin])
+      .rpc();
+
+
+
+
+
 
   });
 
@@ -212,7 +259,8 @@ describe("char coin test", () => {
     await program.methods
       .stakeTokensHandler(
         new anchor.BN(1e6), // 10 tokens
-        new anchor.BN(30) // 30 days
+        // new anchor.BN(30) // 30 days
+        new anchor.BN(1) // 1 days for devnet
       )
       .accounts({
         configAccount: configAccount,
@@ -238,7 +286,8 @@ describe("char coin test", () => {
     await program.methods
       .stakeTokensHandler(
         new anchor.BN(1e6), // 10 tokens
-        new anchor.BN(30) // 30 days
+        // new anchor.BN(30) // 30 days
+        new anchor.BN(1) // 1 days for devnet
       )
       .accounts({
         configAccount: configAccount,
@@ -267,7 +316,8 @@ describe("char coin test", () => {
     await program.methods
       .stakeTokensHandler(
         new anchor.BN(1e6), // 10 tokens
-        new anchor.BN(30) // 30 days
+        // new anchor.BN(30) // 30 days
+        new anchor.BN(1) // 1 days for devnet
       )
       .accounts({
         configAccount: configAccount,
@@ -294,7 +344,8 @@ describe("char coin test", () => {
     await program.methods
       .stakeTokensHandler(
         new anchor.BN(1e6), // 10 tokens
-        new anchor.BN(30) // 30 days
+        // new anchor.BN(30) // 30 days
+        new anchor.BN(1) // 1 days for devnet
       )
       .accounts({
         configAccount: configAccount,
@@ -318,7 +369,8 @@ describe("char coin test", () => {
     const stake_data = await program.account.userStakesEntry.fetch(userStake)
 
     assert.equal(4e6, Number(data.totalAmount));
-    assert.equal(30, Number(stake_data.lockup));
+    // // assert.equal(30, Number(stake_data.lockup));
+    assert.equal(1, Number(stake_data.lockup));
 
   });
 
@@ -507,7 +559,8 @@ try{
     await program.methods
       .stakeTokensHandler(
         new anchor.BN(1e6), // 10 tokens
-        new anchor.BN(30) // 30 days
+        // new anchor.BN(30) // 30 days
+        new anchor.BN(1) // 1 days for devnet
       )
       .accounts({
         configAccount: configAccount,
@@ -575,7 +628,7 @@ try{
 
 
   });
-  it(" distribute marketing funds", async () => {
+  it("distribute marketing funds", async () => {
     let total = 1000e6; // 1000 tokens
     let amount_wallet1 = (total * 425) / 1000; // 42.5%
     let amount_wallet2 = (total * 425) / 1000; // 42.5%
@@ -609,20 +662,7 @@ try{
     balance = (await program.provider.connection.getTokenAccountBalance(deathWalletAta.address))
     assert.equal(balance.value.amount, amount_death.toString());
   })
-  it("buyback and burn", async () => {
-
-    await program.methods
-      .buybackBurnHandler(new anchor.BN(1e6), new anchor.BN(1))
-      .accounts({
-        configAccount: configAccount,
-        mint: tokenMint,
-        burnWalletAta: deathWalletAta.address,
-        burnAuthority: deathWallet.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([deathWallet])
-      .rpc();
-  })
+  
   it("release Funds", async () => {
 
 
@@ -633,37 +673,78 @@ try{
       chaiFunds.publicKey,
       false
     );
-    let annualDonationAta = await getOrCreateAssociatedTokenAccount(
+    let monthlyTopTierWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
-      annualDonationWallet.publicKey,
+      monthlyTopTierWallet.publicKey,
+      false
+    );
+    let annualTopTierWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      annualTopTierWallet.publicKey,
+      false
+    );
+    let monthlyCharityLotteryWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      monthlyCharityLotteryWallet.publicKey,
+      false
+    );
+    let annualCharityLotteryWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      annualCharityLotteryWallet.publicKey,
+      false
+    );
+    let monthlyOneTimeCausesWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      monthlyOneTimeCausesWallet.publicKey,
+      false
+    );
+    let annualOneTimeCausesWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      annualOneTimeCausesWallet.publicKey,
+      false
+    );
+    let monthlyInfiniteImpactCausesWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      monthlyInfiniteImpactCausesWallet.publicKey,
+      false
+    );
+    let annualInfiniteImpactCausesWalletAta = await getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      admin,
+      tokenMint,
+      annualInfiniteImpactCausesWallet.publicKey,
       false
     );
 
-    let monthlyDonationAta = await getOrCreateAssociatedTokenAccount(
-      program.provider.connection,
-      admin,
-      tokenMint,
-      monthlyDonationWallet.publicKey,
-      false
-    );
-    let annualRewardAta = await getOrCreateAssociatedTokenAccount(
-      program.provider.connection,
-      admin,
-      tokenMint,
-      annualRewardWallet.publicKey,
-      false
-    );
-    let monthlyRewardAta = await getOrCreateAssociatedTokenAccount(
-      program.provider.connection,
-      admin,
-      tokenMint,
-      monthlyRewardWallet.publicKey,
-      false
-    );
+ 
     let total = 1000e6; // 1000 tokens
+/**
+ *    
+    
+    
+    
+    
+    
+    pub monthly_infinite_impact_causes_ata: 
+    
+    
+    pub annual_infinite_impact_causes_ata: 
 
+ */
     await program.methods
       .releaseFundsHandler(new anchor.BN(total))
       .accounts({
@@ -672,17 +753,34 @@ try{
         treasuryAuthority: treasuryAuthority.publicKey,
         treasuryAta: treasuryAuthorityAta.address,
         chaiFundsAta: chaiFundsAta.address,
-        annualDonationAta: annualDonationAta.address,
-        monthlyDonationAta: monthlyDonationAta.address,
-        annualRewardAta: annualRewardAta.address,
-        monthlyRewardAta: monthlyRewardAta.address,
+        monthlyTopTierAta:monthlyTopTierWalletAta.address,
+        annualTopTierAta:annualTopTierWalletAta.address,
+        monthlyCharityLotteryAta:monthlyCharityLotteryWalletAta.address,
+        annualCharityLotteryAta:annualCharityLotteryWalletAta.address,
+        monthlyOneTimeCausesAta:monthlyOneTimeCausesWalletAta.address,
+        annualOneTimeCausesAta:annualOneTimeCausesWalletAta.address,
+        monthlyInfiniteImpactCausesAta:monthlyInfiniteImpactCausesWalletAta.address,
+        annualInfiniteImpactCausesAta:annualInfiniteImpactCausesWalletAta.address,
         stakingRewardAta: stakingRewardAta.address,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .signers([treasuryAuthority])
       .rpc();
   })
+it("buyback and burn", async () => {
 
+    await program.methods
+      .buybackBurnHandler()
+      .accounts({
+        configAccount: configAccount,
+        mint: tokenMint,
+        burnWalletAta: deathWalletAta.address,
+        burnAuthority: deathWallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([deathWallet])
+      .rpc();
+  })
 
   it("submitProposal", async () => {
     let data = await program.account.configAccount.fetch(configAccount[0])
@@ -766,7 +864,7 @@ try{
       program.programId
     );
 
-    let startTime = Math.floor(Date.now() / 1000);
+    let startTime = Math.floor(Date.now() / 1000) -1;
     let endTime = Math.floor(Date.now() / 1000) + 9;
     const charityWallet = anchor.web3.Keypair.generate()
     const tx = await program.methods
@@ -799,7 +897,6 @@ try{
 
       const tx = await program.methods
         .castVoteHandler(
-          new anchor.BN(500),//voteWeight
         )
         .accounts({
           voteRecord: voteRecord,
@@ -813,6 +910,7 @@ try{
         .signers([user])
         .rpc();
     } catch (e) {
+      console.log(e)
       if (e instanceof anchor.AnchorError) {
         assert(e.message.includes("VotingNotEligible"))
       } else {
