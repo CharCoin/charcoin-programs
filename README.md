@@ -5,6 +5,7 @@
 
 ---
 
+
 ## 📌 Overview
 
 CHAR Coin is a Solana-based smart contract system built using the Anchor framework and Rust. It implements a decentralized ecosystem for:
@@ -180,3 +181,7 @@ The repository is structured for third-party audit access:
 * Configurable constants for fee and reward logic
 
 For questions or integration support, please open an issue on this repository.
+
+
+
+# [Audit Fixes](https://docs.google.com/document/d/1ABf0TB8vjOWYT7GN4w9gku-QjtKmbl3q9lnm243mR_s/edit?tab=t.0#heading=h.vffjiww0d0o1)
