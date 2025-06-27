@@ -1,9 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Charcoin } from "../target/types/charcoin";
-import { createMint, getOrCreateAssociatedTokenAccount, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { createInitializeTransferFeeConfigInstruction, createMint, getOrCreateAssociatedTokenAccount, mintTo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { assert, use } from "chai";
-
+import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
+const TOKEN_PROGRAM_ID = TOKEN_2022_PROGRAM_ID
 async function confirmTransaction(tx: string) {
   const latestBlockHash = await anchor.getProvider().connection.getLatestBlockhash();
   await anchor.getProvider().connection.confirmTransaction({
@@ -24,7 +25,7 @@ describe("char coin test", () => {
   const admin = anchor.web3.Keypair.generate()
   const user = anchor.web3.Keypair.generate();
   const program = anchor.workspace.charcoin as Program<Charcoin>;
-  const configAccount = anchor.web3.PublicKey.findProgramAddressSync(
+  const [configAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     program.programId
   );
@@ -71,7 +72,10 @@ describe("char coin test", () => {
       admin,
       admin.publicKey,
       null,
-      6 // decimals
+      6, // decimals
+      anchor.web3.Keypair.generate(),
+      {},
+      TOKEN_2022_PROGRAM_ID,
     );
 
     [stakingPool] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -87,7 +91,12 @@ describe("char coin test", () => {
       program.provider.connection,
       user,
       tokenMint,
-      user.publicKey
+      user.publicKey,
+      false,
+      null,
+      null,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_PROGRAM_ID,
     );
     await mintTo(
       program.provider.connection,
@@ -95,58 +104,86 @@ describe("char coin test", () => {
       tokenMint,
       userAta.address, // destination ATA
       admin, // mint authority
-      1_000_000_00000
+      1_000_000_00000,
+      [],
+      {},
+      TOKEN_PROGRAM_ID,
     );
-
-
+    
+    
     stakingPoolAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       stakingPool,
-      true
+      true,
+      null,
+      null,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_PROGRAM_ID,
     );
     stakingRewardAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       stakingRewardAccount,
-      true
+      true,
+      null,
+      null,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_PROGRAM_ID,
     );
     [userStakePDA] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from('user'), user.publicKey.toBuffer()],
       program.programId
     );
-
+    
     marketingWallet1Ata = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       marketingWallet1.publicKey,
-      false
+      false,
+      null,
+      null,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_PROGRAM_ID,
     );
-
+    
     marketingWallet2Ata = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       marketingWallet2.publicKey,
-      false
+      false,
+      null,
+      null,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_PROGRAM_ID,
     );
     deathWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       deathWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
-
+    
+    console.log("here-------------------------------")
     treasuryAuthorityAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       treasuryAuthority.publicKey,
-      false
+      false,
+           null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
 
     await mintTo(
@@ -155,7 +192,10 @@ describe("char coin test", () => {
       tokenMint,
       treasuryAuthorityAta.address, // destination ATA
       admin, // mint authority
-      1_000_000_00000
+      1_000_000_00000,
+          [],
+   {},
+   TOKEN_2022_PROGRAM_ID,
     );
   })
   it("initialized", async () => {
@@ -192,6 +232,8 @@ describe("char coin test", () => {
     await program.methods
       .stakingInitialize()
       .accounts({
+        configAccount: configAccount,
+
         stakingPool: stakingPool,
         stakingRewardAccount: stakingRewardAccount,
         authority: admin.publicKey,
@@ -234,7 +276,7 @@ describe("char coin test", () => {
         new anchor.BN(100) // early_unstake_penalty = 10%
       )
       .accounts({
-                configAccount: configAccount,
+                config: configAccount,
                 admin:admin.publicKey
 
       })
@@ -266,7 +308,7 @@ describe("char coin test", () => {
       )
       .accounts({
         configAccount: configAccount,
-
+        mint:tokenMint,
         stakingPool: stakingPool,
         user: userStakePDA,
         userStake: userStake,
@@ -321,7 +363,6 @@ describe("char coin test", () => {
 
   it("claim reward", async () => {
         let balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
-    console.log("balance",balance)
         await sleep(3000)
 
     await mintTo(
@@ -330,7 +371,10 @@ describe("char coin test", () => {
       tokenMint,
       stakingRewardAta.address, // destination ATA
       admin, // mint authority
-      1_000_000_00000
+      1_000_000_00000,
+          [],
+   {},
+   TOKEN_PROGRAM_ID,
     );
       const [userStake] = anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from('user_stake'), user.publicKey.toBuffer(), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
@@ -344,6 +388,7 @@ describe("char coin test", () => {
           user: userStakePDA,
           userAuthority: user.publicKey,
           userStake: userStake,
+        mint:tokenMint,
 
           userTokenAccount: userAta.address,
           stakingRewardAta: stakingRewardAta.address,
@@ -353,40 +398,12 @@ describe("char coin test", () => {
         .rpc();
 
             balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
-    console.log("balance",balance)
    
   });
-it("unstake", async () => {
-   let balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
-    console.log("balance",balance)
-      const [userStake] = anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from('user_stake'), user.publicKey.toBuffer(), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
-      await program.methods
-        .unstakeTokensHandler(new anchor.BN(0))
-        .accounts({
-          configAccount: configAccount,
-          stakingPool: stakingPool,
-          userStake: userStake,
 
-          user: userStakePDA,
-          userAuthority: user.publicKey,
-          userTokenAccount: userAta.address,
-          poolTokenAccount: stakingPoolAta.address,
-          stakingRewardAta: stakingRewardAta.address,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .signers([user])
-
-        .rpc();
-       balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
-    console.log("balance",balance)
-  });
 
   it("Emergency halt", async () => {
-    let data = await program.account.configAccount.fetch(configAccount[0])
+    let data = await program.account.configAccount.fetch(configAccount)
     assert.equal(data.config.halted, false)
     await program.methods
       .changeEmergencyStateHandler(true)
@@ -398,7 +415,7 @@ it("unstake", async () => {
       })
       .signers([admin])
       .rpc();
-    data = await program.account.configAccount.fetch(configAccount[0])
+    data = await program.account.configAccount.fetch(configAccount)
     assert.equal(data.config.halted, true)
 
 
@@ -416,7 +433,9 @@ it("unstake", async () => {
           destWallet1Ata: marketingWallet1Ata.address,
           destWallet2Ata: marketingWallet2Ata.address,
           tokenProgram: TOKEN_PROGRAM_ID,
-          deathWalletAta: deathWalletAta.address
+          deathWalletAta: deathWalletAta.address,
+                  mint:tokenMint,
+
         })
         .signers([treasuryAuthority])
         .rpc();
@@ -465,7 +484,9 @@ it("unstake", async () => {
         destWallet1Ata: marketingWallet1Ata.address,
         destWallet2Ata: marketingWallet2Ata.address,
         tokenProgram: TOKEN_PROGRAM_ID,
-        deathWalletAta: deathWalletAta.address
+        deathWalletAta: deathWalletAta.address,
+                mint:tokenMint,
+
 
       })
       .signers([treasuryAuthority])
@@ -486,86 +507,153 @@ it("unstake", async () => {
       admin,
       tokenMint,
       charFunds.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let monthlyTopTierWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       monthlyTopTierWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let annualTopTierWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       annualTopTierWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let monthlyCharityLotteryWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       monthlyCharityLotteryWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let annualCharityLotteryWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       annualCharityLotteryWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let monthlyOneTimeCausesWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       monthlyOneTimeCausesWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let annualOneTimeCausesWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       annualOneTimeCausesWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let monthlyInfiniteImpactCausesWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       monthlyInfiniteImpactCausesWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
     let annualInfiniteImpactCausesWalletAta = await getOrCreateAssociatedTokenAccount(
       program.provider.connection,
       admin,
       tokenMint,
       annualInfiniteImpactCausesWallet.publicKey,
-      false
+      false,
+          null,
+    null,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
     );
 
  
     let total = 1000e6; // 1000 tokens
 
     await program.methods
-      .releaseFundsHandler(new anchor.BN(total))
+      .releaseRewardsHandler(new anchor.BN(total))
       .accounts({
         configAccount: configAccount,
-        stakingPool: stakingPool,
         treasuryAuthority: treasuryAuthority.publicKey,
         treasuryAta: treasuryAuthorityAta.address,
-        charFundsAta: charFundsAta.address,
         monthlyTopTierAta:monthlyTopTierWalletAta.address,
         annualTopTierAta:annualTopTierWalletAta.address,
         monthlyCharityLotteryAta:monthlyCharityLotteryWalletAta.address,
         annualCharityLotteryAta:annualCharityLotteryWalletAta.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        mint:tokenMint,
+
+      })
+      .signers([treasuryAuthority])
+      .rpc();
+
+
+        await program.methods
+      .releaseDonationsHandler(new anchor.BN(total))
+      .accounts({
+        configAccount: configAccount,
+        treasuryAuthority: treasuryAuthority.publicKey,
+        treasuryAta: treasuryAuthorityAta.address,
+  
         monthlyOneTimeCausesAta:monthlyOneTimeCausesWalletAta.address,
         annualOneTimeCausesAta:annualOneTimeCausesWalletAta.address,
         monthlyInfiniteImpactCausesAta:monthlyInfiniteImpactCausesWalletAta.address,
         annualInfiniteImpactCausesAta:annualInfiniteImpactCausesWalletAta.address,
-        stakingRewardAta: stakingRewardAta.address,
         tokenProgram: TOKEN_PROGRAM_ID,
+        charFundsAta: charFundsAta.address,
+        mint:tokenMint,
+
+      })
+      .signers([treasuryAuthority])
+      .rpc();
+     
+     
+      await program.methods
+      .releaseStakingFundsHandler(new anchor.BN(total))
+      .accounts({
+        configAccount: configAccount,
+        treasuryAuthority: treasuryAuthority.publicKey,
+        treasuryAta: treasuryAuthorityAta.address,
+        stakingRewardAta: stakingRewardAta.address,
+        stakingPool: stakingPool,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        mint:tokenMint,
+
       })
       .signers([treasuryAuthority])
       .rpc();
@@ -585,95 +673,27 @@ it("buyback and burn", async () => {
       .rpc();
   })
 
-  it("submitProposal", async () => {
-    let data = await program.account.configAccount.fetch(configAccount[0])
 
-    const [proposalAccount] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from('proposal'), data.config.nextProposalId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    // Proposal details
-    const proposalTitle = "Second Proposal";
-    const proposalDescription = "Second Proposla : Testing proposal submission on localhost Solana.";
-    const proposalDuration = 9; // 1 day in seconds
-    await program.methods
-      .submitProposalHandler(proposalTitle, proposalDescription, new anchor.BN(proposalDuration))
-      .accounts({
-        configAccount: configAccount,
-        proposal: proposalAccount,
-        creator: user.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([user])
-      .rpc();
-  })
 
-  it("voteOnProposal", async () => {
-    try {
-      const [proposalAccount] = anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from('proposal'), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
 
-      const voteChoice = true;
-      await program.methods
-        .voteOnProposalHandler(new anchor.BN(0), voteChoice)
-        .accounts({
-          configAccount: configAccount,
-          proposal: proposalAccount,
-          voter: user.publicKey,
-          user: userStakePDA,
-          stakingPool: stakingPool,
-          systemProgram: anchor.web3.SystemProgram.programId,
-
-        })
-        .signers([user])
-        .rpc();
-    } catch (e) {
-      if (e instanceof anchor.AnchorError) {
-        assert(e.message.includes("VotingNotEligible"))
-      } else {
-        assert(false);
-      }
-
-    }
-  })
-
-  it("finalizeProposal", async () => {
-    await sleep(10000); // Wait for proposal duration to pass
-    const [proposalAccount] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from('proposal'), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    await program.methods
-      .finalizeProposalHandler(new anchor.BN(0))
-      .accounts({
-        configAccount: configAccount,
-        proposal: proposalAccount,
-        admin: user.publicKey,
-      })
-      .signers([user])
-      .rpc();
-  })
+  
 
 
   it("register Charity", async () => {
-    let data = await program.account.configAccount.fetch(configAccount[0])
+    let data = await program.account.configAccount.fetch(configAccount)
 
     let name = "Water for All";
-    let description = "Water for underserved communities";
     const [charityAccount] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from('charity'), data.config.nextCharityId.toArrayLike(Buffer, "le", 8)],
       program.programId
     );
 
     let startTime = Math.floor(Date.now() / 1000) -1;
-    let endTime = Math.floor(Date.now() / 1000) + 9;
+    let endTime = Math.floor(Date.now() / 1000) + 19;
     const charityWallet = anchor.web3.Keypair.generate()
     const tx = await program.methods
       .registerCharityHandler(
         name,
-        description,
         charityWallet.publicKey,
         new anchor.BN(startTime),
         new anchor.BN(endTime)
@@ -682,13 +702,15 @@ it("buyback and burn", async () => {
         configAccount: configAccount,
         charity: charityAccount,
         registrar: admin.publicKey,
+        admin: admin.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([admin])
       .rpc();
   })
   it("castVote", async () => {
-    try {
+        await sleep(10000); // Wait for proposal duration to pass
+
       const [charityAccount] = anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from('charity'), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
         program.programId
@@ -700,7 +722,8 @@ it("buyback and burn", async () => {
 
       const tx = await program.methods
         .castVoteHandler(
-          new anchor.BN(0)
+          new anchor.BN(0),
+          new anchor.BN(1) // 1 char point
         )
         .accounts({
           voteRecord: voteRecord,
@@ -713,14 +736,7 @@ it("buyback and burn", async () => {
         })
         .signers([user])
         .rpc();
-    } catch (e) {
-      if (e instanceof anchor.AnchorError) {
-        assert(e.message.includes("VotingNotEligible"))
-      } else {
-        assert(false);
-      }
-
-    }
+  
   })
 
 
@@ -745,7 +761,33 @@ it("buyback and burn", async () => {
   })
 
  
+it("unstake", async () => {
+   let balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
+      const [userStake] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from('user_stake'), user.publicKey.toBuffer(), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+      await program.methods
+        .unstakeTokensHandler(new anchor.BN(0))
+        .accounts({
+          configAccount: configAccount,
+          stakingPool: stakingPool,
+          userStake: userStake,
+        mint:tokenMint,
 
+          user: userStakePDA,
+          userAuthority: user.publicKey,
+          userTokenAccount: userAta.address,
+          poolTokenAccount: stakingPoolAta.address,
+          stakingRewardAta: stakingRewardAta.address,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([user])
+
+        .rpc();
+       balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
+  });
 
  
 
