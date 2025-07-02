@@ -20,7 +20,7 @@ pub use security::*;
 pub use staking::*;
 pub use errors::*;
 
-declare_id!("aUvFTHYrF4N6vpyC5DnkWNXqahcGcDknEScKeoEuANt");
+declare_id!("ai3YXqGx4AprHym5YRcjMBnXhnB7NuW7QnQhkQNEFi1");
 
 #[program]
 pub mod charcoin {
@@ -120,12 +120,12 @@ pub mod charcoin {
     }
 
     /// Casts or updates a vote for a charity.
-    pub fn cast_vote_handler(ctx: Context<CastVote>, charity_id: u64,char_points:u64) -> Result<()> {
+    pub fn cast_vote_handler(ctx: Context<CastVote>, charity_id: u64) -> Result<()> {
         require!(
             ctx.accounts.config_account.config.halted == false,
             CustomError::ProgramIsHalted
         );
-        donation::cast_vote(ctx, charity_id,char_points)
+        donation::cast_vote(ctx, charity_id)
     }
 
     /// Finalizes charity voting after the voting period ends.
@@ -189,7 +189,6 @@ pub mod charcoin {
         ctx: Context<Settings>,
         min_governance_stake: u64,
         min_stake_duration_voting: u64,
-        early_unstake_penalty: u64,
     ) -> Result<()> {
           require!(
             ctx.accounts.config.config.halted == false,
@@ -198,23 +197,26 @@ pub mod charcoin {
         let config = &mut ctx.accounts.config;
         config.config.min_governance_stake = min_governance_stake;
         config.config.min_stake_duration_voting = min_stake_duration_voting;
-        config.config.early_unstake_penalty = early_unstake_penalty;
         Ok(())
     }
     pub fn set_reward_percentage_handler(
         ctx: Context<SetReward>,
         reward1: u16,
-        lockup1: u16,
-        vote_power1: u16, // reward = 50 (5%), lockup = 30 (days), vote_power = 500 (0.5x)
-        reward2: u16,
-        lockup2: u16,
-        vote_power2: u16,
-        reward3: u16,
-        lockup3: u16,
-        vote_power3: u16,
-        reward4: u16,
-        lockup4: u16,
-        vote_power4: u16,
+    lockup1: u16,
+    vote_power1: u16, // reward = 50 (5%), lockup = 30 (days), vote_power = 500 (0.5x)
+    penalty1:u16,
+    reward2: u16,
+    lockup2: u16,
+    vote_power2: u16,
+    penalty2:u16,
+    reward3: u16,
+    lockup3: u16,
+    vote_power3: u16,
+    penalty3:u16,
+    reward4: u16,
+    lockup4: u16,
+    vote_power4: u16,
+    penalty4:u16,
     ) -> Result<()> {
           require!(
             ctx.accounts.config_account.config.halted == false,
@@ -224,16 +226,20 @@ pub mod charcoin {
             ctx,
             reward1,
             lockup1,
-            vote_power1,
+            vote_power1, 
+            penalty1,
             reward2,
             lockup2,
             vote_power2,
+            penalty2,
             reward3,
             lockup3,
             vote_power3,
+            penalty3,
             reward4,
             lockup4,
             vote_power4,
+            penalty4,
         )
     }
 }
@@ -271,7 +277,6 @@ pub struct Config {
     pub total_burned: u64, // total amount of char tokens burn by death wallet
     pub min_governance_stake: u64, // Minimum stake required to participate in governance
     pub min_stake_duration_voting: u64, // Minimum staking period required for a user to be eligible to vote
-    pub early_unstake_penalty: u64,     // 100 = 10%
 }
 
 /// Account that holds the global configuration.

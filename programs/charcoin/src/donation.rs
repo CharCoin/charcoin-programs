@@ -64,15 +64,13 @@ pub fn register_charity(
 }
 
 /// Casts vote for a charity
-pub fn cast_vote(ctx: Context<CastVote>, _charity_id: u64,char_points:u64) -> Result<()> {
-    require!(char_points > 0, CustomError::InvalidArg);
+pub fn cast_vote(ctx: Context<CastVote>, _charity_id: u64) -> Result<()> {
     let config_account = &mut ctx.accounts.config_account;
     let vote_record = &mut ctx.accounts.vote_record;
     let charity = &mut ctx.accounts.charity;
 
     let clock = Clock::get()?.unix_timestamp as u64;
     let user = &mut ctx.accounts.user;
-    require!(char_points <= user.voting_power , CustomError::YouDontHaveEnoughVotingPower);
     
     let amount_staked = user.total_amount;
     if vote_record.voted {
@@ -99,9 +97,11 @@ pub fn cast_vote(ctx: Context<CastVote>, _charity_id: u64,char_points:u64) -> Re
     user.last_vote_time = clock;
     let vote_weight = user.voting_power;
 
-    user.voting_power = user.voting_power
-     .checked_sub(char_points)
-        .ok_or(CustomError::MathError)?;
+
+    // Once the vote is submitted, the user’s CHAR VOTES balance is reset to zero. To regain voting power, 
+    // the user must stake additional CHAR tokens. This mechanism is designed to create a healthy cycle where 
+    // users earn rewards while gaining meaningful influence over which causes receive support.
+    user.voting_power = 0; 
      
     vote_record.charity = charity.key();
     vote_record.voter = ctx.accounts.voter.key();
@@ -164,11 +164,11 @@ pub struct RegisterCharity<'info> {
             32                      // admin
     )]
     pub charity: Account<'info, Charity>,
-    /// CHECK: Registrar is the address of admin of charity
+    /// CHECK: registrar is the public key of admin of charity, CHAR admin can specify the registrar of charity.
     pub registrar: AccountInfo<'info>, 
     #[account(
         mut,
-        constraint = registrar.key() == config_account.config.admin,
+        constraint = admin.key() == config_account.config.admin,
     )]
     pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,

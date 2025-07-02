@@ -32,17 +32,23 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
         authority: ctx.accounts.user_authority.to_account_info(),
         mint:ctx.accounts.mint.to_account_info()
     };
+    let char_balance_before = ctx.accounts.pool_token_account.amount;
+    
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
     transfer_checked(cpi_ctx, amount,ctx.accounts.mint.decimals)?;
 
+    ctx.accounts.pool_token_account.reload()?; // latest balance after transfer
+    
+    let char_balance_after = ctx.accounts.pool_token_account.amount;
+    let received_amount = char_balance_after.checked_sub(char_balance_before).unwrap();
     // update user stake entry
     user_stake.stake_id = user.stake_count;
-    user_stake.amount = amount;
+    user_stake.amount = received_amount;
     user_stake.staked_at = clock;
     user_stake.lockup = lockup;
     // update staking pool state
-    staking_pool.total_staked += amount;
+    staking_pool.total_staked += received_amount;
 
     // Update user staking info
     user.authority = ctx.accounts.user_authority.key();
@@ -54,7 +60,7 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
         user.eligible_at = clock;
     }
     
-    user.total_amount += amount;
+    user.total_amount += received_amount;
     user.stake_count += 1;
 
 
@@ -98,7 +104,6 @@ pub fn request_unstake_tokens(ctx: Context<UnstakeRequest>, _stake_id: u64) -> R
 
 pub fn unstake_tokens(ctx: Context<Unstake>, _stake_id: u64) -> Result<()> {
     let user = &mut ctx.accounts.user;
-    let config_account = &mut ctx.accounts.config_account;
     let user_stake = &mut ctx.accounts.user_stake;
     let staking_pool = &mut ctx.accounts.staking_pool;
 
@@ -129,27 +134,21 @@ pub fn unstake_tokens(ctx: Context<Unstake>, _stake_id: u64) -> Result<()> {
 
     let mut fee = 0;
     if staking_duration < min_staking_duration {
-        let penalty = config_account.config.early_unstake_penalty; // 100 = 10%
-        fee = (user_stake.amount * penalty) / 1000;
+        let penalty = staking_pool
+            .stake_lockup_reward_array
+            .iter()
+            .find(|x| x.lockup_days == user_stake.lockup)
+            .ok_or(CustomError::WrongStakingPackage)?
+            .penalty;
+        fee = (user_stake.amount * penalty as u64) / 1000;
     }
 
     let amount_to_return = user_stake.amount - fee;
 
 
 
-        let vote_power = staking_pool
-    .stake_lockup_reward_array
-    .iter()
-    .find(|x| x.lockup_days == user_stake.lockup)
-    .unwrap()
-    .vote_power;
+   
 
-    let vote_weight = (vote_power as u128 * user_stake.amount as u128 / 1000) as u64;
-    if user.voting_power > vote_weight{
-        user.voting_power = user.voting_power
-         .checked_sub(vote_weight)
-            .ok_or(CustomError::MathError)?;
-    }
 
     // Create PDA signer seeds
     let pool_seeds = &[
@@ -276,36 +275,44 @@ pub fn set_reward_percentage(
     reward1: u16,
     lockup1: u16,
     vote_power1: u16, // reward = 50 (5%), lockup = 30 (days), vote_power = 500 (0.5x)
+    penalty1:u16,
     reward2: u16,
     lockup2: u16,
     vote_power2: u16,
+    penalty2:u16,
     reward3: u16,
     lockup3: u16,
     vote_power3: u16,
+    penalty3:u16,
     reward4: u16,
     lockup4: u16,
     vote_power4: u16,
+    penalty4:u16,
 ) -> Result<()> {
     let staking_pool = &mut ctx.accounts.staking_pool;
     staking_pool.stake_lockup_reward_array[0] = LockupReward {
         lockup_days: lockup1,
         reward_bps: reward1,
         vote_power: vote_power1,
+        penalty: penalty1,
     };
     staking_pool.stake_lockup_reward_array[1] = LockupReward {
         lockup_days: lockup2,
         reward_bps: reward2,
         vote_power: vote_power2,
+        penalty: penalty2,
     };
     staking_pool.stake_lockup_reward_array[2] = LockupReward {
         lockup_days: lockup3,
         reward_bps: reward3,
         vote_power: vote_power3,
+        penalty: penalty3,
     };
     staking_pool.stake_lockup_reward_array[3] = LockupReward {
         lockup_days: lockup4,
         reward_bps: reward4,
         vote_power: vote_power4,
+        penalty: penalty4,
     };
 
     Ok(())
@@ -493,12 +500,7 @@ pub struct UnstakeRequest<'info> {
         bump
     )]
     pub config_account: Account<'info, ConfigAccount>,
-    #[account(
-        mut,
-        seeds = [b"staking_pool".as_ref(), staking_pool.token_mint.as_ref()],
-        bump = staking_pool.bump,
-    )]
-    pub staking_pool: Account<'info, StakingPool>,
+  
     #[account(
         mut,
         seeds = [b"user_stake".as_ref(), user_authority.key().as_ref(),stake_id.to_le_bytes().as_ref()],
@@ -574,6 +576,7 @@ pub struct LockupReward {
     pub lockup_days: u16, // Number of days for lockup
     pub reward_bps: u16,  // Reward percentage in basis points (500 = 5%)
     pub vote_power: u16,
+    pub penalty:u16,
 }
 
 #[account]
