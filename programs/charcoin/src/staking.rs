@@ -56,7 +56,7 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
     user.bump = ctx.bumps.user;
 
     if user.total_amount < config_account.config.min_governance_stake &&
-     user.total_amount + amount >= config_account.config.min_governance_stake{
+     user.total_amount + received_amount >= config_account.config.min_governance_stake{
         user.eligible_at = clock;
     }
     
@@ -72,7 +72,7 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
     .unwrap()
     .vote_power;
     //  voting_amount = 500 * 10e6 / 1000    e.g 500 = 0.5, 1000 = 1
-    let vote_weight = (vote_power as u128 * amount as u128 / 1000) as u64;
+    let vote_weight = (vote_power as u128 * received_amount as u128 / 1000) as u64;
 
     user.voting_power += vote_weight;
 
@@ -132,14 +132,24 @@ pub fn unstake_tokens(ctx: Context<Unstake>, _stake_id: u64) -> Result<()> {
     user.total_amount -= user_stake.amount;
     staking_pool.total_staked -= user_stake.amount;
 
+
+
+     let lockup_reward = staking_pool
+    .stake_lockup_reward_array
+    .iter()
+    .find(|x| x.lockup_days == user_stake.lockup)
+    .ok_or(CustomError::WrongStakingPackage)
+    .unwrap();
+    // case 1: if user stakes but does not vote, then the voting power against the amount they staked is calculated and subtract from total voting power. 
+    // case 2: if user stakes and votes, then your total voting power is consumed. and set to zero in cast_vote. in that cases if the user unstake we don't need to subtract the voting power as it is already zero.
+    if user.voting_power != 0 {
+        let vote_weight = (lockup_reward.vote_power as u128 * user_stake.amount as u128 / 1000) as u64;
+        user.voting_power -= vote_weight;
+    }
+
     let mut fee = 0;
     if staking_duration < min_staking_duration {
-        let penalty = staking_pool
-            .stake_lockup_reward_array
-            .iter()
-            .find(|x| x.lockup_days == user_stake.lockup)
-            .ok_or(CustomError::WrongStakingPackage)?
-            .penalty;
+        let penalty = lockup_reward.penalty;
         fee = (user_stake.amount * penalty as u64) / 1000;
     }
 

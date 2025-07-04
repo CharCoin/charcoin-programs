@@ -96,8 +96,7 @@ const maxFee = BigInt(9 * Math.pow(10, 6)); // 9 tokens
         ),
         createInitializeMintInstruction(tokenMint.publicKey, 6, admin.publicKey, null, TOKEN_2022_PROGRAM_ID)
     );
-    const newTokenTx = await sendAndConfirmTransaction(program.provider.connection, mintTransaction, [admin, tokenMint], undefined);
-    console.log("New Token Created:", newTokenTx);
+    await sendAndConfirmTransaction(program.provider.connection, mintTransaction, [admin, tokenMint], undefined);
     tokenMint = tokenMint.publicKey;
     // tokenMint = await createMint(
     //   program.provider.connection,

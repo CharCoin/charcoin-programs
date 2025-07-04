@@ -71,6 +71,8 @@ pub fn cast_vote(ctx: Context<CastVote>, _charity_id: u64) -> Result<()> {
 
     let clock = Clock::get()?.unix_timestamp as u64;
     let user = &mut ctx.accounts.user;
+
+    require!(user.voting_power > 0, CustomError::VotingNotEligible);
     
     let amount_staked = user.total_amount;
     if vote_record.voted {
