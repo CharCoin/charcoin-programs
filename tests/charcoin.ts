@@ -7,6 +7,8 @@ import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 const TOKEN_PROGRAM_ID = TOKEN_2022_PROGRAM_ID
  import {sendAndConfirmTransaction, SystemProgram, Transaction,
 } from '@solana/web3.js';
+
+
 async function confirmTransaction(tx: string) {
   const latestBlockHash = await anchor.getProvider().connection.getLatestBlockhash();
   await anchor.getProvider().connection.confirmTransaction({
@@ -362,28 +364,6 @@ const maxFee = BigInt(9 * Math.pow(10, 6)); // 9 tokens
 
 
 
-  it("request unstake", async () => {
-// 1st
-     let [userStake] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from('user_stake'), user.publicKey.toBuffer(), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    let now = Math.floor(Date.now() / 1000);
-    await sleep(2000)
-    await program.methods
-      .requestUnstakeHandler(new anchor.BN(0)) // stake id
-      .accounts({
-        configAccount: configAccount,
-        userStake: userStake,
-        userAuthority: user.publicKey,
-      })
-      .signers([user])
-      .rpc();
-
-    const data = await program.account.userStakesEntry.fetch(userStake)
-    assert.isAbove(Number(data.unstakeRequestedAt), now)
-
-  });
 
 
   
@@ -787,8 +767,34 @@ it("buyback and burn", async () => {
       .rpc();
   })
 
- 
+   it("request unstake", async () => {
+// 1st
+     let [userStake] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from('user_stake'), user.publicKey.toBuffer(), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
+      program.programId
+    );
+    let now = Math.floor(Date.now() / 1000);
+    await sleep(2000)
+    await program.methods
+      .requestUnstakeHandler(new anchor.BN(0)) // stake id
+      .accounts({
+        configAccount: configAccount,
+        userStake: userStake,
+        userAuthority: user.publicKey,
+            stakingPool: stakingPool,
+          user: userStakePDA,
+      })
+      .signers([user])
+      .rpc();
+
+    const data = await program.account.userStakesEntry.fetch(userStake)
+    assert.isAbove(Number(data.unstakeRequestedAt), now)
+
+  });
+
 it("unstake", async () => {
+          await sleep(5000)
+
    let balance = (await program.provider.connection.getTokenAccountBalance(userAta.address))
       const [userStake] = anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from('user_stake'), user.publicKey.toBuffer(), new anchor.BN(0).toArrayLike(Buffer, "le", 8)],
@@ -798,10 +804,10 @@ it("unstake", async () => {
         .unstakeTokensHandler(new anchor.BN(0))
         .accounts({
           configAccount: configAccount,
-          stakingPool: stakingPool,
           userStake: userStake,
-        mint:tokenMint,
-
+          mint:tokenMint,
+          
+          stakingPool: stakingPool,
           user: userStakePDA,
           userAuthority: user.publicKey,
           userTokenAccount: userAta.address,

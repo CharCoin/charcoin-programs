@@ -3,10 +3,9 @@ use anchor_lang::solana_program::clock::Clock;
 use anchor_spl::token_2022::{transfer_checked, Token2022 as Token, TransferChecked};
 use anchor_spl::token_interface::{TokenAccount,Mint};
 use crate::{ConfigAccount, CustomError};
-// const FOURTY_EIGHT_HOURS_IN_SECONDS:u32 = 172800;
-const FOURTY_EIGHT_HOURS_IN_SECONDS:u32 = 1;
-// const ONE_DAY_IN_SECONDS:u32 = 86400;
-const ONE_DAY_IN_SECONDS:u32 = 1;
+const FOURTY_EIGHT_HOURS_IN_SECONDS:u32 = 172800;
+const ONE_DAY_IN_SECONDS:u32 = 86400;
+
 
 pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()> {
     require!(amount > 0, CustomError::NoStakedTokens);
@@ -85,6 +84,8 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
 
 pub fn request_unstake_tokens(ctx: Context<UnstakeRequest>, _stake_id: u64) -> Result<()> {
     let user_stake = &mut ctx.accounts.user_stake;
+    let user = &mut ctx.accounts.user;
+    let staking_pool = &mut ctx.accounts.staking_pool;
 
     require!(user_stake.amount > 0, CustomError::NoStakedTokens);
     require!(
@@ -92,6 +93,22 @@ pub fn request_unstake_tokens(ctx: Context<UnstakeRequest>, _stake_id: u64) -> R
         CustomError::UnstakeAlreadyRequested
     );
     require!(user_stake.unstaked_at == 0, CustomError::AlreadyUnStaked);
+
+
+    // case 1: if user stakes but does not vote, then the voting power against the amount they staked is calculated and subtract from total voting power. 
+    // case 2: if user stakes and votes, then your total voting power is consumed. and set to zero in cast_vote. in that cases if the user unstake we don't need to subtract the voting power as it is already zero.
+    if user.voting_power != 0 {
+        let lockup_reward = staking_pool
+        .stake_lockup_reward_array
+        .iter()
+        .find(|x| x.lockup_days == user_stake.lockup)
+        .ok_or(CustomError::WrongStakingPackage)
+        .unwrap();
+        let vote_weight = (lockup_reward.vote_power as u128 * user_stake.amount as u128 / 1000) as u64;
+        user.voting_power -= vote_weight;
+    }
+
+
 
     user_stake.unstake_requested_at = Clock::get()?.unix_timestamp as u64;
     msg!(
@@ -134,21 +151,17 @@ pub fn unstake_tokens(ctx: Context<Unstake>, _stake_id: u64) -> Result<()> {
 
 
 
-     let lockup_reward = staking_pool
-    .stake_lockup_reward_array
-    .iter()
-    .find(|x| x.lockup_days == user_stake.lockup)
-    .ok_or(CustomError::WrongStakingPackage)
-    .unwrap();
-    // case 1: if user stakes but does not vote, then the voting power against the amount they staked is calculated and subtract from total voting power. 
-    // case 2: if user stakes and votes, then your total voting power is consumed. and set to zero in cast_vote. in that cases if the user unstake we don't need to subtract the voting power as it is already zero.
-    if user.voting_power != 0 {
-        let vote_weight = (lockup_reward.vote_power as u128 * user_stake.amount as u128 / 1000) as u64;
-        user.voting_power -= vote_weight;
-    }
+
+
 
     let mut fee = 0;
     if staking_duration < min_staking_duration {
+        let lockup_reward = staking_pool
+        .stake_lockup_reward_array
+        .iter()
+        .find(|x| x.lockup_days == user_stake.lockup)
+        .ok_or(CustomError::WrongStakingPackage)
+        .unwrap();
         let penalty = lockup_reward.penalty;
         fee = (user_stake.amount * penalty as u64) / 1000;
     }
@@ -510,14 +523,26 @@ pub struct UnstakeRequest<'info> {
         bump
     )]
     pub config_account: Account<'info, ConfigAccount>,
-  
+    #[account(
+        mut,
+        seeds = [b"staking_pool".as_ref(), staking_pool.token_mint.as_ref()],
+        bump = staking_pool.bump,
+    )]
+    pub staking_pool: Account<'info, StakingPool>,
     #[account(
         mut,
         seeds = [b"user_stake".as_ref(), user_authority.key().as_ref(),stake_id.to_le_bytes().as_ref()],
         bump
     )]
     pub user_stake: Account<'info, UserStakesEntry>,
- 
+   #[account(
+        mut,
+        seeds = [b"user".as_ref(),  user_authority.key().as_ref()],
+        bump = user.bump,
+        constraint = user.authority == user_authority.key(),
+        constraint = user.staking_pool == staking_pool.key()
+    )]
+    pub user: Account<'info, UserStakeInfo>,
 
     #[account(mut)]
     pub user_authority: Signer<'info>,
