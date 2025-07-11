@@ -104,6 +104,7 @@ pub fn cast_vote(ctx: Context<CastVote>, _charity_id: u64) -> Result<()> {
     // the user must stake additional CHAR tokens. This mechanism is designed to create a healthy cycle where 
     // users earn rewards while gaining meaningful influence over which causes receive support.
     user.voting_power = 0; 
+    user.consumed_stake_id_upper_bound = user.stake_count; // stake IDs from 0 up to (stake_count - 1) are consumed.
      
     vote_record.charity = charity.key();
     vote_record.voter = ctx.accounts.voter.key();

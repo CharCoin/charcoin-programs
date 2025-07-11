@@ -62,7 +62,7 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
     user.total_amount += received_amount;
     user.stake_count += 1;
 
-
+    
 
     let vote_power = staking_pool
     .stake_lockup_reward_array
@@ -82,7 +82,7 @@ pub fn stake_tokens(ctx: Context<Stake>, amount: u64, lockup: u16) -> Result<()>
 
 
 
-pub fn request_unstake_tokens(ctx: Context<UnstakeRequest>, _stake_id: u64) -> Result<()> {
+pub fn request_unstake_tokens(ctx: Context<UnstakeRequest>, stake_id: u64) -> Result<()> {
     let user_stake = &mut ctx.accounts.user_stake;
     let user = &mut ctx.accounts.user;
     let staking_pool = &mut ctx.accounts.staking_pool;
@@ -94,10 +94,9 @@ pub fn request_unstake_tokens(ctx: Context<UnstakeRequest>, _stake_id: u64) -> R
     );
     require!(user_stake.unstaked_at == 0, CustomError::AlreadyUnStaked);
 
-
-    // case 1: if user stakes but does not vote, then the voting power against the amount they staked is calculated and subtract from total voting power. 
-    // case 2: if user stakes and votes, then your total voting power is consumed. and set to zero in cast_vote. in that cases if the user unstake we don't need to subtract the voting power as it is already zero.
-    if user.voting_power != 0 {
+    // All stake_id < consumed_stake_id_upper_bound → already used in voting 
+	// All stake_id >= consumed_stake_id_upper_bound → still active voting power, needs to subtract voting power on unstake 
+    if stake_id >= user.consumed_stake_id_upper_bound {
         let lockup_reward = staking_pool
         .stake_lockup_reward_array
         .iter()
@@ -641,7 +640,8 @@ pub struct UserStakeInfo {
     pub reward_issued: u64,// total reward amount issued claimed by user
     pub stake_count: u64,
     pub bump: u8,
-    pub last_vote_time:u64
+    pub last_vote_time:u64,
+    pub consumed_stake_id_upper_bound: u64, // default to 0
 }
 
 #[account]
