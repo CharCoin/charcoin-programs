@@ -1,59 +1,55 @@
-
 # CharCoin Smart Contract (Solana)
 
 ### Transparent Donations • DAO Governance • Dynamic Staking • Deflationary Tokenomics
 
 ---
 
-
-## 📌 Overview
+## Overview
 
 CHAR Coin is a Solana-based smart contract system built using the Anchor framework and Rust. It implements a decentralized ecosystem for:
 
-- Stake-based DAO governance  
-- Transparent, automated donation fund allocation  
-- Buyback and burn deflation mechanics  
-- Dynamic staking with time-based rewards  
-- Multisig-secured marketing and treasury fund control  
-- Emergency halt for contract protection
+* Stake-based DAO governance
+* Transparent, automated donation fund allocation
+* Buyback and burn deflation mechanics
+* Dynamic staking with time-based rewards
+* Multisig-secured marketing and treasury fund control
+* Emergency halt for contract protection
 
-All modules have passed internal audits and comprehensive unit testing. For more details, please refer to the Official White Paper: https://charcoin.org/charcoin-white-paper/
-
----
-
-## ✅ Development Environment
-
-- **Rust:** `1.83.0`
-- **Anchor CLI:** `0.30.1`
-- **Solana CLI:** `2.1.17`
-- **Test Path:** `tests/charcoin.ts`
+All modules have passed internal audits and comprehensive unit testing. For more details, please refer to the Official White Paper: [https://charcoin.org/charcoin-white-paper/](https://charcoin.org/charcoin-white-paper/)
 
 ---
 
-## 🧩 Program Modules
+## Development Environment
 
-Each logic component is modularized for clarity and maintainability:
-
-| Module            | Description                                                                            |
-|-------------------|----------------------------------------------------------------------------------------|
-| `lib.rs`          | Entry point and global instruction router                                              |
-| `burn.rs`         | Buyback and deflationary burn functions                                                |
-| `staking.rs`      | Locking, staking, and dynamic reward distribution                                      |
-| `governance.rs`   | Proposal lifecycle, vote casting, and finalization                                     |
-| `donation.rs`     | Charity registration, voting, and distribution logic                                   |
-| `marketing.rs`    | Multisig marketing wallet management and release rules                                 |
-| `security.rs`     | Emergency halt mechanism and multisig verification                                     |
-| `rewards.rs`      | Additional reward systems, including lottery-style and volume-based bonuses (optional) |
+* Rust: `1.83.0`
+* Anchor CLI: `0.30.1`
+* Solana CLI: `2.1.17`
+* Test Path: `tests/charcoin.ts`
 
 ---
 
-## 🧪 Unit Testing
+## Program Modules
+
+| Module         | Description                                                                            |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `lib.rs`       | Entry point and global instruction router                                              |
+| `burn.rs`      | Buyback and deflationary burn functions                                                |
+| `staking.rs`   | Locking, staking, and dynamic reward distribution                                      |
+| `donation.rs`  | Charity registration, voting, and distribution logic                                   |
+| `marketing.rs` | Multisig marketing wallet management and release rules                                 |
+| `security.rs`  | Emergency halt mechanism and multisig verification                                     |
+| `rewards.rs`   | Additional reward systems, including lottery-style and volume-based bonuses (optional) |
+| `errors.rs`    | Centralized error handling and custom error codes                                      |
+
+---
+
+## Unit Testing
 
 Run:
 
 ```bash
 anchor test
-````
+```
 
 **Test Summary:**
 All 20 core instructions and flows are passing:
@@ -69,16 +65,16 @@ All 20 core instructions and flows are passing:
 
 ---
 
-## 🔐 Security Features
+## Security Features
 
-* **Multisig Authorization:** All fund releases (marketing, donations, DAO treasury) are protected by multisig thresholds.
-* **Emergency Halt:** Critical instructions can be paused upon detection of suspicious behavior.
-* **DAO Governance:** Voting power is locked to staking participation; only staked tokens (min 15 days) are eligible to vote.
-* **Audit Readiness:** Fully modular code, deterministic execution paths, and descriptive events for audit traceability.
+* Multisig Authorization: All fund releases (marketing, donations, DAO treasury) are protected by multisig thresholds.
+* Emergency Halt: Critical instructions can be paused upon detection of suspicious behavior.
+* DAO Governance: Voting power is locked to staking participation; only staked tokens (min 15 days) are eligible to vote.
+* Audit Readiness: Fully modular code, deterministic execution paths, and descriptive events for audit traceability.
 
 ---
 
-## 📈 Tokenomics Structure
+## Tokenomics Structure
 
 CHAR Coin uses a fixed **1% transaction fee**, distributed as:
 
@@ -96,27 +92,27 @@ Reward rates are **dynamically adjusted** based on:
 
 ---
 
-## 🗳️ DAO Governance
+## DAO Governance
 
 Governance follows a proposal–vote–finalize structure. Key mechanics:
 
-* **Proposals**: Any eligible staker can submit
-* **Voting Period**: Defined by system configuration
-* **Weight**: Proportional to staked tokens
-* **Finalization**: On-chain vote tally and execution
+* Proposals: Any eligible staker can submit
+* Voting Period: Defined by system configuration
+* Weight: Proportional to staked tokens
+* Finalization: On-chain vote tally and execution
 
 ---
 
-## ❤️ Charity Voting System
+## Charity Voting System
 
-* **Cause Registration**: Any verified organization can be listed
-* **User Voting**: Monthly vote window; 1 vote per wallet
-* **Distribution**: Weighted fund release after vote closure
-* **Annual Reserve**: 20% of funds are pooled for yearly distribution
+* Cause Registration: Any verified organization can be listed
+* User Voting: Monthly vote window; 1 vote per wallet
+* Distribution: Weighted fund release after vote closure
+* Annual Reserve: 20% of funds are pooled for yearly distribution
 
 ---
 
-## 🛠 Setup Instructions
+## Setup Instructions
 
 ### Dependencies
 
@@ -147,7 +143,7 @@ solana program show --program-id <PROGRAM_ID>
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 charcoin-programs/
@@ -157,11 +153,11 @@ charcoin-programs/
 │           ├── lib.rs
 │           ├── burn.rs
 │           ├── staking.rs
-│           ├── governance.rs
-│           ├── marketing.rs
 │           ├── donation.rs
+│           ├── marketing.rs
 │           ├── security.rs
-│           └── rewards.rs
+│           ├── rewards.rs
+│           └── errors.rs
 ├── tests/
 │   └── charcoin.ts
 ├── Anchor.toml
@@ -171,7 +167,7 @@ charcoin-programs/
 
 ---
 
-## 📦 Audit Readiness
+## Audit Readiness
 
 The repository is structured for third-party audit access:
 
@@ -179,5 +175,7 @@ The repository is structured for third-party audit access:
 * Clear event logs for transaction tracing
 * Multisig-secured flows for critical operations
 * Configurable constants for fee and reward logic
+
+The smart contract has been audited and the full Certik audit report is available in the `Audit` folder.
 
 For questions or integration support, please open an issue on this repository.
