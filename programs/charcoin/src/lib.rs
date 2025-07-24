@@ -199,6 +199,21 @@ pub mod charcoin {
         config.config.min_stake_duration_voting = min_stake_duration_voting;
         Ok(())
     }
+    pub fn update_number_of_wallets(
+        ctx: Context<Settings>,
+        number_of_top_tier_wallets:u64, 
+        number_of_charity_lottery_wallets:u64 
+    ) -> Result<()> {
+          require!(
+            ctx.accounts.config.config.halted == false,
+            CustomError::ProgramIsHalted
+        );
+        let config = &mut ctx.accounts.config;
+        
+        config.config.number_of_top_tier_wallets = number_of_top_tier_wallets;
+        config.config.number_of_charity_lottery_wallets = number_of_charity_lottery_wallets;
+        Ok(())
+    }
     pub fn set_reward_percentage_handler(
         ctx: Context<SetReward>,
         reward1: u16,
@@ -272,11 +287,12 @@ pub struct Config {
     pub treasury_authority: Pubkey, // char Token fee wallet
     pub halted: bool, // emergency state that indicates if the contract is halted.
     
-    pub next_proposal_id: u64, // id's for governance proposals
     pub next_charity_id: u64,// id's for charity donation proposals
     pub total_burned: u64, // total amount of char tokens burn by death wallet
     pub min_governance_stake: u64, // Minimum stake required to participate in governance
     pub min_stake_duration_voting: u64, // Minimum staking period required for a user to be eligible to vote
+    pub number_of_top_tier_wallets:u64, // 10
+    pub number_of_charity_lottery_wallets:u64 // 10
 }
 
 /// Account that holds the global configuration.
