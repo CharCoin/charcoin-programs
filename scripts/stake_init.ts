@@ -51,7 +51,6 @@ async function main() {
         // program
     );
 
-    // Example: Fetch fee account data (adjust according to your program's account structure)
     try {
       
     

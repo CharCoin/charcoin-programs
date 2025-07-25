@@ -9,13 +9,13 @@ skip-lint = false
 charcoin = "aUvFTHYrF4N6vpyC5DnkWNXqahcGcDknEScKeoEuANt"
 
 [programs.devnet]
-charcoin = "aUvFTHYrF4N6vpyC5DnkWNXqahcGcDknEScKeoEuANt"
+charcoin = "aWuWrrSRxxxZP6mMsLGkQ8kfzBq2FT7K3uEWyHwf4pp"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"  
+cluster = "devnet"  
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -13,6 +13,8 @@ import { Charcoin } from "../target/types/charcoin";
 import fs from "fs"
 import path from "path"
 import { homedir } from "os";
+import { getOrCreateAssociatedTokenAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 // Replace with your mainnet RPC URL
 const RPC_URL = "https://api.devnet.solana.com";
 
@@ -56,41 +58,65 @@ async function main() {
     [Buffer.from('config')],
     program.programId
   );
-
  
-        const mint= new anchor.web3.PublicKey("chAZFTpRrSj4nbygm5ZgqoPD5GffDwMCv4iKXhZ2X9f")
- const context = {
-      user: admin.publicKey,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      config: configAccount,
-      mint
-    }
-   const config = {
-      charFunds: admin.publicKey,
-      marketingWallet1: admin.publicKey,
-      marketingWallet2: admin.publicKey,
-      admin: admin.publicKey,
-      monthlyTopTierWallet:admin.publicKey,
-      annualTopTierWallet:admin.publicKey,
-      monthlyCharityLotteryWallet:admin.publicKey,
-      annualCharityLotteryWallet:admin.publicKey,
-      monthlyOneTimeCausesWallet:admin.publicKey,
-      monthlyInfiniteImpactCausesWallet:admin.publicKey,
-      annualOneTimeCausesWallet:admin.publicKey,
-      annualInfiniteImpactCausesWallet:admin.publicKey,
-      deathWallet: admin.publicKey,
-      treasuryAuthority: admin.publicKey,
-      charTokenMint:mint,
-    };
+  const mint= new anchor.web3.PublicKey("chAZFTpRrSj4nbygm5ZgqoPD5GffDwMCv4iKXhZ2X9f")
+  
+  const[stakingPool] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from('staking_pool'), mint.toBuffer()],
+      program.programId
+    );
+ 
+    const [stakingRewardAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from('staking_reward'),mint.toBuffer()],
+      program.programId
+    );
+
+const  stakingPoolAta = await getOrCreateAssociatedTokenAccount(
+          program.provider.connection,
+          admin.payer,
+          mint,
+          stakingPool,
+          true,
+          null,
+          null,
+          TOKEN_2022_PROGRAM_ID,
+          ASSOCIATED_PROGRAM_ID,
+        );
+console.log("Staking Pool ATA:", stakingPoolAta.address.toBase58());
     // Add your test here.
-    const configIx =  await program.methods.initialize(
-      config
-    )        
-    .accounts(context)
+    const configIx =   await program.methods
+          .setRewardPercentageHandler(
+                // reward       , lockup          ,   vote power      
+                    new anchor.BN(50),new anchor.BN(1),new anchor.BN(500),new anchor.BN(100), //  5 , 1, 0.5 
+                    new anchor.BN(70),new anchor.BN(90),new anchor.BN(1000),new anchor.BN(100), // 7, 90, 1
+                    new anchor.BN(150),new anchor.BN(180),new anchor.BN(3000),new anchor.BN(100),  // 15, 180, 3
+                    new anchor.BN(180),new anchor.BN(180),new anchor.BN(3000),new anchor.BN(100),  // 15, 180, 3
+          )
+        .accounts({
+        stakingPool: stakingPool,
+                configAccount: configAccount,
+                admin:admin.publicKey
+
+      })
     .instruction();
 
+ const updateSettingTx = await program.methods
+      .updateSettings(
+        new anchor.BN(10*1e6),// min_governance_stake = 10 token
+        new anchor.BN(1*86400), // min_stake_duration_voting = 1 day
+      )
+      .accounts({
+                config: configAccount,
+                admin:admin.publicKey
 
-            const tx = new Transaction().add(configIx);
+      })
+          .instruction();
+
+
+            const tx = new Transaction()
+            
+            tx.add(configIx);
+            tx.add(updateSettingTx);
 
             tx.feePayer = admin.publicKey;
             tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;

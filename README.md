@@ -21,8 +21,8 @@ All modules have passed internal audits and comprehensive unit testing. For more
 
 ## Development Environment
 
-* Rust: `1.83.0`
-* Anchor CLI: `0.30.1`
+* Rust: `1.87.0`
+* Anchor CLI: `0.31.1`
 * Solana CLI: `2.1.17`
 * Test Path: `tests/charcoin.ts`
 
