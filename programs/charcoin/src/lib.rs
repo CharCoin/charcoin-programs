@@ -22,6 +22,11 @@ pub use errors::*;
 
 declare_id!("aWuWrrSRxxxZP6mMsLGkQ8kfzBq2FT7K3uEWyHwf4pp");
 
+
+// CRITICAL: Replace this with your actual wallet public key before deployment
+const AUTHORIZED_INITIALIZER: &str = "GmuRoGwWddJzoajRqLkvRBEDBzRBGK8TeeAaTNzbeQqA"; 
+
+
 #[program]
 pub mod charcoin {
     use super::*;
@@ -292,7 +297,9 @@ pub struct Initialize<'info> {
         seeds=[b"config".as_ref()],
          bump, space = 8 + std::mem::size_of::<ConfigAccount>())]
     pub config: Account<'info, ConfigAccount>,
-    #[account(mut)]
+    #[account(mut,
+        constraint = user.key().to_string() == AUTHORIZED_INITIALIZER 
+    )]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
