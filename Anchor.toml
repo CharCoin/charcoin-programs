@@ -10,12 +10,14 @@ charcoin = "aUvFTHYrF4N6vpyC5DnkWNXqahcGcDknEScKeoEuANt"
 
 [programs.devnet]
 charcoin = "aWuWrrSRxxxZP6mMsLGkQ8kfzBq2FT7K3uEWyHwf4pp"
+[programs.mainnet]
+charcoin = "c37mvW9JM6S3bzsY43VhJWQucW1b8uFyBkK4y3LCdRH"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"  
+cluster = "mainnet"  
 wallet = "~/.config/solana/id.json"
 
 [scripts]

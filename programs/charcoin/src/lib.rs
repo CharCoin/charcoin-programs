@@ -20,11 +20,11 @@ pub use security::*;
 pub use staking::*;
 pub use errors::*;
 
-declare_id!("aWuWrrSRxxxZP6mMsLGkQ8kfzBq2FT7K3uEWyHwf4pp");
+declare_id!("c37mvW9JM6S3bzsY43VhJWQucW1b8uFyBkK4y3LCdRH");
 
 
 // CRITICAL: Replace this with your actual wallet public key before deployment
-const AUTHORIZED_INITIALIZER: &str = "GmuRoGwWddJzoajRqLkvRBEDBzRBGK8TeeAaTNzbeQqA"; 
+const AUTHORIZED_INITIALIZER: &str = "cbvf8qySm1EsTyS3BfyH7pWGztA33Q8trpp6onMwRM4"; 
 
 
 #[program]

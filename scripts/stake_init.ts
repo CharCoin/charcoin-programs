@@ -7,8 +7,6 @@ import {
 } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import idl from "../target/idl/charcoin.json";
-import bs58 from "bs58";
-import { BN } from "bn.js";
 import { Charcoin } from "../target/types/charcoin";
 import fs from "fs"
 import path from "path"
@@ -16,7 +14,7 @@ import { homedir } from "os";
 import { getOrCreateAssociatedTokenAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 // Replace with your mainnet RPC URL
-const RPC_URL = "https://api.devnet.solana.com";
+const RPC_URL = "https://mainnet.helius-rpc.com/?api-key=";
 
 // Retrieve your plain private key from an environment variable.
 // The PRIVATE_KEY should be a string (for example, a base58-encoded key)
@@ -59,7 +57,7 @@ async function main() {
     program.programId
   );
  
-  const mint= new anchor.web3.PublicKey("chAZFTpRrSj4nbygm5ZgqoPD5GffDwMCv4iKXhZ2X9f")
+  const mint= new anchor.web3.PublicKey("charyAhpBstVjf5VnszNiY8UUVDbvA167dQJqpBY2hw")
   
   const[stakingPool] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from('staking_pool'), mint.toBuffer()],
